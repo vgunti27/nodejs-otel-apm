@@ -38,6 +38,7 @@ app.use((req, res, next) => {
     const span = tracer.startSpan(`${req.method} ${req.path}`);
     spanId = span.spanContext().spanId;
     req.span = span;
+    console.log('Span created for existing session:', span.spanContext());
   } else {
     // New transaction - start root span and initialize session trace
     isNewTransaction = true;
@@ -51,6 +52,7 @@ app.use((req, res, next) => {
     traceId = sc.traceId;
     spanId = sc.spanId;
     req.span = span;
+    console.log('Span created for new session:', span.spanContext());
     
     // Store trace_id in session for subsequent requests
     if (req.session) {
