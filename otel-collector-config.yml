@@ -1,0 +1,61 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+  attributes:
+    actions:
+      - key: service.namespace
+        value: demo-ecom
+        action: insert
+
+exporters:
+  otlp:
+    client:
+      endpoint: tempo:4317
+      tls:
+        insecure: true
+  
+  jaeger:
+    endpoint: http://tempo:14250
+    tls:
+      insecure: true
+  
+  logging:
+    loglevel: debug
+
+  prometheus:
+    endpoint: "0.0.0.0:8888"
+    namespace: otelcol
+    const_labels:
+      collector: otelcol
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, attributes]
+      exporters: [otlp, logging]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, logging]
+
+extensions:
+  health_check:
+    http_server_address: 0.0.0.0:13133
+  pprof:
+    endpoint: :1777
+  zpages:
+    endpoint: :55679

@@ -1,0 +1,37 @@
+server:
+  http_listen_port: 3200
+  http_api_prefix: /
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+  rate_limit_bytes: 5000000
+  overrides:
+    per_instance_limits:
+      max_bytes_per_second: 5000000
+
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  max_block_duration: 5m
+
+metrics_generator:
+  registry:
+    external_labels:
+      cluster: docker-compose
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
+
+querier:
+  frontend_worker:
+    frontend_address: localhost:3200

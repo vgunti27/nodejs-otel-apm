@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  # Node.js Application - the demo ecommerce app with OpenTelemetry instrumentation
+  nodejs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nodejs-app
+    ports:
+      - "3000:3000"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=demo-ecom-app
+      - DEPLOYMENT_ENV=development
+      - NODE_ENV=production
+    depends_on:
+      - otel-collector
+    networks:
+      - otel-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # OpenTelemetry Collector - receives traces from the application
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    ports:
+      - "4318:4318"   # OTLP/HTTP receiver
+      - "4317:4317"   # OTLP/gRPC receiver
+      - "13133:13133" # Health check
+      - "55679:55679" # ZPages
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    depends_on:
+      - tempo
+    networks:
+      - otel-network
+    environment:
+      - GOGC=80
+
+  # Grafana Tempo - stores traces
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yml"]
+    ports:
+      - "3200:3200"   # Tempo HTTP port
+      - "4317:4317"   # OTLP gRPC receiver
+    volumes:
+      - ./tempo.yml:/etc/tempo.yml
+      - tempo-data:/var/tempo
+    networks:
+      - otel-network
+
+  # Prometheus - for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - otel-network
+
+  # Grafana - visualization dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"  # Use 3001 to avoid conflict with app on 3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./grafana-dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - tempo
+      - prometheus
+    networks:
+      - otel-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Loki - log aggregation (optional)
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - otel-network
+
+volumes:
+  tempo-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  otel-network:
+    driver: bridge
