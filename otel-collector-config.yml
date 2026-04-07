@@ -13,7 +13,7 @@ processors:
 
 exporters:
   otlphttp:
-    endpoint: http://tempo:3200/v1/traces
+    endpoint: http://jaeger:14250
   
   debug:
     verbosity: detailed

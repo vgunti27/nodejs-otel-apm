@@ -12,30 +12,53 @@ services:
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
     depends_on:
-      tempo:
+      jaeger:
         condition: service_started
     networks:
       - otel-network
     environment:
       - GOGC=80
 
-  # Grafana Tempo - stores traces  
-  tempo:
-    image: grafana/tempo:latest
-    container_name: tempo
+  # Jaeger - stores traces
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
     ports:
-      - "3200:3200"   # Tempo HTTP port
+      - "16686:16686"  # Jaeger UI
+      - "14250:14250"  # OTLP HTTP
+      - "14268:14268"  # OTLP gRPC
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     volumes:
-      - tempo-data:/var/tempo
+      - jaeger-data:/tmp
     networks:
       - otel-network
-    environment:
-      - GOGC=80
-    # Run with in-memory backend for simplicity (no config file needed)
-    command:
-      - -config.file=/dev/null
-      - -storage.trace.backend=local
-      - -storage.trace.local.path=/var/tempo/traces
+
+  # Loki - log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+    networks:
+      - otel-network
+
+  # Promtail - log shipper for Loki
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./logs:/var/log/app
+      - ./promtail-config.yaml:/etc/promtail/config.yaml
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - otel-network
 
   # Prometheus - for metrics (optional, for service maps)
   prometheus:
@@ -69,8 +92,9 @@ services:
       - ./grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
       - ./grafana-dashboards:/var/lib/grafana/dashboards
     depends_on:
-      - tempo
+      - jaeger
       - prometheus
+      - loki
     networks:
       - otel-network
     healthcheck:
@@ -79,10 +103,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # Loki - log aggregation (optional, disabled for now)
-
 volumes:
-  tempo-data:
+  jaeger-data:
+  loki-data:
   prometheus-data:
   grafana-data:
 
