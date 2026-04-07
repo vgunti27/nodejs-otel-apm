@@ -1,11 +1,16 @@
+// Initialize OpenTelemetry tracing FIRST
+require('./tracing');
+
 const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
 const logger = require('./logger');
+const { trace, context } = require('@opentelemetry/api');
 
 const app = express();
+const tracer = trace.getTracer('demo-ecom-app', '1.0.0');
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -19,6 +24,80 @@ app.use(session({
   saveUninitialized: false,
   cookie: { maxAge: 60000 * 60 } // 60 minutes
 }));
+
+// OpenTelemetry middleware - propagate trace context across user session
+app.use((req, res, next) => {
+  let traceId, spanId, isNewTransaction = false;
+  
+  // For authenticated session - reuse trace_id from session
+  if (req.session && req.session.traceId) {
+    // Continue existing transaction - reuse trace_id
+    traceId = req.session.traceId;
+    
+    // Create a new child span under the same trace
+    const span = tracer.startSpan(`${req.method} ${req.path}`);
+    spanId = span.spanContext().spanId;
+    req.span = span;
+  } else {
+    // New transaction - start root span and initialize session trace
+    isNewTransaction = true;
+    const span = tracer.startSpan(`${req.method} ${req.path}`, {
+      attributes: {
+        'transaction.type': 'session-start',
+      }
+    });
+    
+    const sc = span.spanContext();
+    traceId = sc.traceId;
+    spanId = sc.spanId;
+    req.span = span;
+    
+    // Store trace_id in session for subsequent requests
+    if (req.session) {
+      req.session.traceId = traceId;
+    }
+  }
+  
+  // Set span attributes
+  if (req.span) {
+    req.span.setAttributes({
+      'http.method': req.method,
+      'http.url': req.url,
+      'http.target': req.path,
+      'http.host': req.hostname,
+      'http.scheme': req.protocol,
+      'http.client_ip': req.ip,
+      'transaction.new': isNewTransaction,
+      'session.id': req.sessionID || 'none',
+    });
+  }
+  
+  // Store trace context in request
+  req.traceContext = {
+    traceId: traceId,
+    spanId: spanId,
+    isNewTransaction: isNewTransaction,
+  };
+  
+  // Set trace context in AsyncLocalStorage so logger can access it
+  logger.setTraceContext(traceId, spanId);
+  
+  // End span when response is sent
+  const originalEnd = res.end;
+  res.end = function(...args) {
+    if (req.span) {
+      req.span.setAttributes({
+        'http.status_code': res.statusCode,
+      });
+      req.span.end();
+    }
+    return originalEnd.apply(res, args);
+  };
+  
+  // Call next with the span context
+  const spanContext = req.span ? trace.setSpan(context.active(), req.span) : context.active();
+  context.with(spanContext, next);
+});
 
 // Set view engine
 app.set('view engine', 'ejs');
