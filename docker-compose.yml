@@ -19,22 +19,23 @@ services:
     environment:
       - GOGC=80
 
-  # Grafana Tempo - stores traces (using jaeger-all tag for simpler config)
+  # Grafana Tempo - stores traces  
   tempo:
-    image: grafana/tempo:2.0.0
+    image: grafana/tempo:latest
     container_name: tempo
-    command: ["-config.file=/etc/tempo.yml"]
     ports:
-      - "3200:3200"   # Tempo HTTP port (for querying)
-      - "4317:4317"   # OpenTelemetry gRPC
-      - "4318:4318"   # OpenTelemetry HTTP
+      - "3200:3200"   # Tempo HTTP port
     volumes:
-      - ./tempo.yml:/etc/tempo.yml
       - tempo-data:/var/tempo
     networks:
       - otel-network
     environment:
       - GOGC=80
+    # Run with in-memory backend for simplicity (no config file needed)
+    command:
+      - -config.file=/dev/null
+      - -storage.trace.backend=local
+      - -storage.trace.local.path=/var/tempo/traces
 
   # Prometheus - for metrics (optional, for service maps)
   prometheus:
