@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart - Ecommerce Store</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <h1>Ecommerce Store</h1>
+      <div class="nav-links">
+        <a href="/products" class="nav-link">Products</a>
+        <a href="/cart" class="nav-link active">Cart</a>
+        <a href="/logs" class="nav-link">Logs</a>
+        <a href="/logout" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <h2>Shopping Cart</h2>
+    
+    <% if (cart.length === 0) { %>
+      <div class="alert alert-info">
+        <p>Your cart is empty.</p>
+        <a href="/products" class="btn-primary">Continue Shopping</a>
+      </div>
+    <% } else { %>
+      <div class="cart-container">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Subtotal</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% cart.forEach(item => { %>
+              <tr>
+                <td><%= item.name %></td>
+                <td>$<%= item.price %></td>
+                <td><%= item.quantity %></td>
+                <td>$<%= (item.price * item.quantity).toFixed(2) %></td>
+                <td>
+                  <form method="POST" action="/remove-from-cart" style="display:inline;">
+                    <input type="hidden" name="productId" value="<%= item.id %>">
+                    <button type="submit" class="btn-danger">Remove</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        
+        <div class="cart-summary">
+          <h3>Order Summary</h3>
+          <p>Total: <strong>$<%= total.toFixed(2) %></strong></p>
+          
+          <div class="cart-actions">
+            <a href="/products" class="btn-secondary">Continue Shopping</a>
+            <a href="/shipping" class="btn-primary">Proceed to Shipping</a>
+          </div>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

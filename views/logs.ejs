@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Logs - Ecommerce Store</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .logs-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .logs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .log-file-selector {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .log-file-selector select {
+      padding: 0.5rem;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .log-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-card.info {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-card.success {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .stat-card.warn {
+      background: linear-gradient(135deg, #f96163 0%, #f9a231 100%);
+    }
+
+    .stat-card.error {
+      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    }
+
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .log-content {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1.5rem;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .log-line {
+      padding: 0.25rem 0;
+      margin-bottom: 0.25rem;
+      border-left: 3px solid transparent;
+      padding-left: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .log-line.info {
+      color: #4ec9b0;
+      border-left-color: #4ec9b0;
+    }
+
+    .log-line.success {
+      color: #4ec9b0;
+      border-left-color: #4ec9b0;
+    }
+
+    .log-line.action {
+      color: #569cd6;
+      border-left-color: #569cd6;
+    }
+
+    .log-line.warn {
+      color: #ce9178;
+      border-left-color: #ce9178;
+    }
+
+    .log-line.error {
+      color: #f48771;
+      border-left-color: #f48771;
+    }
+
+    .log-time {
+      min-width: 60px;
+      font-weight: bold;
+    }
+
+    .log-level {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0 0.4rem;
+      border-radius: 2px;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .log-app {
+      color: #dcdcaa;
+      font-weight: bold;
+    }
+
+    .log-user {
+      color: #ce9178;
+    }
+
+    .log-ip {
+      color: #9cdcfe;
+    }
+
+    .log-msg {
+      color: #d4d4d4;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .empty-logs {
+      text-align: center;
+      padding: 2rem;
+      color: #7f8c8d;
+    }
+
+    .logs-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .file-info {
+      background: #ecf0f1;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .file-info-item {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .file-info-item label {
+      font-weight: 600;
+      color: #2c3e50;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .file-info-item span {
+      color: #34495e;
+    }
+
+    @media (max-width: 768px) {
+      .logs-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .log-file-selector {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .log-file-selector select {
+        width: 100%;
+      }
+
+      .logs-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <h1>Ecommerce Store</h1>
+      <div class="nav-links">
+        <a href="/products" class="nav-link">Products</a>
+        <a href="/logs" class="nav-link active">Activity Logs</a>
+        <a href="/logout" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2>📊 Activity Logs</h2>
+
+    <div class="logs-container">
+      <div class="logs-header">
+        <div>
+          <h3>View Logs</h3>
+        </div>
+        <div class="log-file-selector">
+          <label for="logFile">Select Log File:</label>
+          <select id="logFile" onchange="loadLog(this.value)">
+            <% if (logFiles.length === 0) { %>
+              <option value="">No logs available</option>
+            <% } else { %>
+              <% logFiles.forEach(file => { %>
+                <option value="<%= file %>" <%= file === selectedFile ? 'selected' : '' %>>
+                  <%= file %>
+                </option>
+              <% }); %>
+            <% } %>
+          </select>
+        </div>
+      </div>
+
+      <% if (selectedFile && logStats) { %>
+        <div class="log-stats">
+          <div class="stat-card info">
+            <div class="number"><%= logStats.info || 0 %></div>
+            <div class="label">Info Messages</div>
+          </div>
+          <div class="stat-card success">
+            <div class="number"><%= logStats.success || 0 %></div>
+            <div class="label">Success Actions</div>
+          </div>
+          <div class="stat-card warn">
+            <div class="number"><%= logStats.warn || 0 %></div>
+            <div class="label">Warnings</div>
+          </div>
+          <div class="stat-card error">
+            <div class="number"><%= logStats.error || 0 %></div>
+            <div class="label">Errors</div>
+          </div>
+          <div class="stat-card action">
+            <div class="number"><%= logStats.action || 0 %></div>
+            <div class="label">User Actions</div>
+          </div>
+        </div>
+
+        <div class="file-info">
+          <div class="file-info-item">
+            <label>File Size</label>
+            <span><%= logFileSize %></span>
+          </div>
+          <div class="file-info-item">
+            <label>Total Lines</label>
+            <span><%= logLines %></span>
+          </div>
+          <div class="file-info-item">
+            <label>Last Modified</label>
+            <span><%= lastModified %></span>
+          </div>
+        </div>
+
+        <% if (logContent) { %>
+          <div class="log-content">
+            <% logContent.split('\n').filter(line => line.trim()).forEach(line => {
+              try {
+                const logObj = JSON.parse(line);
+                const timestamp = logObj.timestamp.substring(11, 19);
+                const app = logObj.application;
+                const level = logObj.log_level;
+                const message = logObj.message;
+                const user = logObj.user;
+                const srcIp = logObj.src_ip;
+                let logType = 'info';
+                if (level === 'SUCCESS') logType = 'success';
+                else if (level === 'ACTION') logType = 'action';
+                else if (level === 'WARN') logType = 'warn';
+                else if (level === 'ERROR') logType = 'error';
+            %>
+              <div class="log-line <%= logType %>">
+                <span class="log-time"><%= timestamp %></span>
+                <span class="log-level">[<%= level %>]</span>
+                <span class="log-app"><%= app %></span>
+                <span class="log-user">USER: <%= user %></span>
+                <span class="log-ip">IP: <%= srcIp %></span>
+                <span class="log-msg"><%= message %></span>
+              </div>
+            <% 
+              } catch(e) {
+                // Skip invalid JSON
+              }
+            }); %>
+          </div>
+        <% } else { %>
+          <div class="empty-logs">
+            <p>No log entries found for this file.</p>
+          </div>
+        <% } %>
+      <% } else if (!selectedFile) { %>
+        <div class="empty-logs">
+          <p>📋 No logs available yet.</p>
+          <p>Start using the application to generate activity logs.</p>
+        </div>
+      <% } %>
+
+      <div class="logs-actions">
+        <a href="/products" class="btn-primary">Back to Shopping</a>
+        <% if (selectedFile) { %>
+          <form method="get" action="/download-logs" style="display:inline; margin: 0;">
+            <input type="hidden" name="file" value="<%= selectedFile %>">
+            <button type="submit" class="btn-secondary">Download Logs</button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function loadLog(filename) {
+      if (filename) {
+        window.location.href = '/logs?file=' + filename;
+      }
+    }
+  </script>
+</body>
+</html>

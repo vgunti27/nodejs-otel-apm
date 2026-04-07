@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation - Ecommerce Store</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <h1>Ecommerce Store</h1>
+      <div class="nav-links">
+        <a href="/products" class="nav-link">Products</a>
+        <a href="/logs" class="nav-link">Logs</a>
+        <a href="/logout" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <div class="confirmation-container">
+      <div class="confirmation-success">
+        <div class="success-icon">✓</div>
+        <h1>Order Confirmed!</h1>
+        <p>Thank you for your purchase.</p>
+      </div>
+      
+      <div class="confirmation-card">
+        <div class="order-number-section">
+          <p class="label">Order Number</p>
+          <p class="order-number"><%= order.orderNumber %></p>
+          <p class="email">Confirmation has been sent to <%= order.shipping.email %></p>
+        </div>
+        
+        <hr>
+        
+        <div class="order-details">
+          <h3>Order Details</h3>
+          
+          <div class="detail-section">
+            <h4>Items Ordered</h4>
+            <table class="confirmation-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Quantity</th>
+                  <th>Price</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% order.items.forEach(item => { %>
+                  <tr>
+                    <td><%= item.name %></td>
+                    <td><%= item.quantity %></td>
+                    <td>$<%= item.price %></td>
+                    <td>$<%= (item.price * item.quantity).toFixed(2) %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+            <div class="order-total">
+              <strong>Total Amount: $<%= order.total.toFixed(2) %></strong>
+            </div>
+          </div>
+          
+          <div class="detail-section">
+            <h4>Shipping Address</h4>
+            <p><%= order.shipping.firstName %> <%= order.shipping.lastName %></p>
+            <p><%= order.shipping.address %></p>
+            <p><%= order.shipping.city %>, <%= order.shipping.state %> <%= order.shipping.zip %></p>
+            <p>Phone: <%= order.shipping.phone %></p>
+            <p>Email: <%= order.shipping.email %></p>
+          </div>
+          
+          <div class="detail-section">
+            <h4>Payment Information</h4>
+            <p><strong>Payment Method:</strong> <%= order.paymentMethod %></p>
+            <p><strong>Status:</strong> Pending</p>
+            <p class="cod-info">
+              💵 Payment will be collected upon delivery
+            </p>
+          </div>
+          
+          <div class="detail-section">
+            <h4>Order Time</h4>
+            <p><%= order.createdAt %></p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="confirmation-actions">
+        <a href="/products" class="btn-primary">Continue Shopping</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
