@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # OpenTelemetry Collector - receives traces from the application
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    ports:
+      - "4318:4318"   # OTLP/HTTP receiver
+      - "13133:13133" # Health check
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    depends_on:
+      tempo:
+        condition: service_started
+    networks:
+      - otel-network
+    environment:
+      - GOGC=80
+
+  # Grafana Tempo - stores traces  
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP port
+    volumes:
+      - tempo-data:/var/tempo
+    networks:
+      - otel-network
+    environment:
+      - GOGC=80
+    # Run with in-memory backend for simplicity (no config file needed)
+    command:
+      - -config.file=/dev/null
+      - -storage.trace.backend=local
+      - -storage.trace.local.path=/var/tempo/traces
+
+  # Prometheus - for metrics (optional, for service maps)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - otel-network
+
+  # Grafana - visualization dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./grafana-dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - tempo
+      - prometheus
+    networks:
+      - otel-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Loki - log aggregation (optional, disabled for now)
+
+volumes:
+  tempo-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  otel-network:
+    driver: bridge

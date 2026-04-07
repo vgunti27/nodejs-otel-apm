@@ -1,0 +1,14 @@
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 4317
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
