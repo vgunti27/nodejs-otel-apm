@@ -1,10 +1,17 @@
 const fs = require('fs');
 const path = require('path');
+const { trace } = require('@opentelemetry/api');
+const { AsyncLocalStorage } = require('async_hooks');
+
+// Create async local storage for trace context
+const traceContextStorage = new AsyncLocalStorage();
 
 class Logger {
   constructor() {
     this.logsDir = path.join(__dirname, 'logs');
     this.app = 'demo-ecom-app';
+    this.serviceName = 'demo-ecom-app';
+    this.deploymentEnvironment = process.env.DEPLOYMENT_ENV || 'development';
     this.ensureLogsDir();
   }
 
@@ -26,6 +33,46 @@ class Logger {
     return new Date().toISOString();
   }
 
+  // Get trace context (trace_id and span_id)
+  getTraceContext() {
+    // First check if trace context is stored in AsyncLocalStorage
+    const storedContext = traceContextStorage.getStore();
+    if (storedContext && storedContext.trace_id && storedContext.span_id) {
+      return storedContext;
+    }
+    
+    // Fall back to OpenTelemetry API
+    try {
+      const span = trace.getActiveSpan();
+      if (span) {
+        const spanContext = span.spanContext();
+        return {
+          trace_id: spanContext.traceId || 'unknown',
+          span_id: spanContext.spanId || 'unknown'
+        };
+      }
+    } catch (err) {
+      // No active span
+    }
+    return {
+      trace_id: 'no-trace',
+      span_id: 'no-span'
+    };
+  }
+
+  // Set trace context in AsyncLocalStorage
+  static setTraceContext(traceId, spanId) {
+    traceContextStorage.enterWith({
+      trace_id: traceId,
+      span_id: spanId
+    });
+  }
+
+  // Clear trace context
+  static clearTraceContext() {
+    traceContextStorage.enterWith(null);
+  }
+
   // Get log file path based on date
   getLogFilePath(date = null) {
     const dateStr = date || this.getDateString();
@@ -34,11 +81,21 @@ class Logger {
 
   // Create JSON log object
   createLogObject(level, message, user = null, srcIp = null, details = null) {
+    const traceContext = this.getTraceContext();
     const logObject = {
       timestamp: this.getTimestamp(),
       application: this.app,
+      service: {
+        name: this.serviceName,
+        version: '1.0.0'
+      },
+      deployment: {
+        environment: this.deploymentEnvironment
+      },
       log_level: level,
       message: message,
+      trace_id: traceContext.trace_id,
+      span_id: traceContext.span_id,
       src_ip: srcIp || 'unknown',
       user: user || 'system',
       details: details || {}
@@ -67,8 +124,12 @@ class Logger {
     const user = logObject.user;
     const message = logObject.message;
     const srcIp = logObject.src_ip;
+    const traceId = logObject.trace_id;
+    const spanId = logObject.span_id;
+    const serviceName = logObject.service.name;
+    const environment = logObject.deployment.environment;
     
-    const formattedLog = `[${timestamp}] [${level}] APP: ${logObject.application} | USER: ${user} | IP: ${srcIp} | MSG: ${message}`;
+    const formattedLog = `[${timestamp}] [${level}] SERVICE: ${serviceName} | ENV: ${environment} | USER: ${user} | IP: ${srcIp} | TRACE: ${traceId} | SPAN: ${spanId} | MSG: ${message}`;
     console.log(formattedLog);
   }
 
@@ -183,4 +244,10 @@ class Logger {
   }
 }
 
-module.exports = new Logger();
+const loggerInstance = new Logger();
+
+// Export both the instance and the Logger class for static methods
+module.exports = loggerInstance;
+module.exports.Logger = Logger;
+module.exports.setTraceContext = Logger.setTraceContext;
+module.exports.clearTraceContext = Logger.clearTraceContext;
