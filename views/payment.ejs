@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment - Ecommerce Store</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <h1>Ecommerce Store</h1>
+      <div class="nav-links">
+        <a href="/products" class="nav-link">Products</a>
+        <a href="/cart" class="nav-link">Cart</a>
+        <a href="/logs" class="nav-link">Logs</a>
+        <a href="/logout" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <div class="payment-container">
+      <div class="payment-form">
+        <h2>Payment Method</h2>
+        
+        <form method="POST" action="/payment">
+          <div class="payment-options">
+            <div class="payment-option">
+              <input type="radio" id="cod" name="paymentMethod" value="COD" checked required>
+              <label for="cod">
+                <strong>Cash on Delivery (COD)</strong>
+                <p>Pay when your order arrives</p>
+              </label>
+            </div>
+            
+            <div class="payment-info">
+              <p><strong>How it works:</strong></p>
+              <ul>
+                <li>Order will be delivered to your address</li>
+                <li>Payment is due upon delivery</li>
+                <li>No online payment required</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <a href="/shipping" class="btn-secondary">Back to Shipping</a>
+            <button type="submit" class="btn-primary">Place Order</button>
+          </div>
+        </form>
+      </div>
+      
+      <div class="order-summary">
+        <h3>Order Summary</h3>
+        <div class="payment-total">
+          <p>Amount to Pay:</p>
+          <p class="total-amount">$<%= total.toFixed(2) %></p>
+        </div>
+        <div class="payment-method-badge">
+          <strong>Payment Method: COD</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products - Ecommerce Store</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <h1>Ecommerce Store</h1>
+      <div class="nav-links">
+        <a href="/products" class="nav-link active">Products</a>
+        <a href="/cart" class="nav-link">Cart (<%= cart.length %>)</a>
+        <a href="/logs" class="nav-link">Logs</a>
+        <a href="/logout" class="nav-link">Logout</a>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container">
+    <h2>Our Products</h2>
+    
+    <div class="products-grid">
+      <% products.forEach(product => { %>
+        <div class="product-card">
+          <div class="product-image">
+            <img src="https://via.placeholder.com/200?text=<%= product.name %>" alt="<%= product.name %>">
+          </div>
+          <h3><%= product.name %></h3>
+          <p class="description"><%= product.description %></p>
+          <p class="price">$<%= product.price %></p>
+          
+          <form method="POST" action="/add-to-cart">
+            <input type="hidden" name="productId" value="<%= product.id %>">
+            <button type="submit" class="btn-primary">Add to Cart</button>
+          </form>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</body>
+</html>
