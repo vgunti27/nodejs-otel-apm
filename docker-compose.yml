@@ -7,33 +7,34 @@ services:
     container_name: otel-collector
     command: ["--config=/etc/otel-collector-config.yml"]
     ports:
-      - "4318:4318"   # OTLP/gRPC receiver (HTTP)
-      - "4317:4317"   # OTLP/gRPC receiver
+      - "4318:4318"   # OTLP/HTTP receiver
       - "13133:13133" # Health check
-      - "55679:55679" # ZPages
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
     depends_on:
-      - tempo
+      tempo:
+        condition: service_started
     networks:
       - otel-network
     environment:
       - GOGC=80
 
-  # Grafana Tempo - stores traces
+  # Grafana Tempo - stores traces (using jaeger-all tag for simpler config)
   tempo:
-    image: grafana/tempo:latest
+    image: grafana/tempo:2.0.0
     container_name: tempo
     command: ["-config.file=/etc/tempo.yml"]
     ports:
-      - "3200:3200"   # Tempo HTTP port
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver (alternate)
+      - "3200:3200"   # Tempo HTTP port (for querying)
+      - "4317:4317"   # OpenTelemetry gRPC
+      - "4318:4318"   # OpenTelemetry HTTP
     volumes:
       - ./tempo.yml:/etc/tempo.yml
       - tempo-data:/var/tempo
     networks:
       - otel-network
+    environment:
+      - GOGC=80
 
   # Prometheus - for metrics (optional, for service maps)
   prometheus:
@@ -77,23 +78,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # Loki - log aggregation (optional, for correlating logs with traces)
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yml
-    volumes:
-      - loki-data:/loki
-    networks:
-      - otel-network
+  # Loki - log aggregation (optional, disabled for now)
 
 volumes:
   tempo-data:
   prometheus-data:
   grafana-data:
-  loki-data:
 
 networks:
   otel-network:
